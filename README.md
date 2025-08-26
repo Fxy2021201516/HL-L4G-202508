@@ -42,118 +42,115 @@ More detailed codes in other regions can be traced by the above codes for experi
 
 ## Compiling and Running the Code
 
-We provide two methods for compiling and running the experiments: a local build using CMake and a containerized build using Docker for maximum reproducibility. All experiments were originally conducted on a Linux server with the Ubuntu 20.04.1 system.
+To ensure maximum reproducibility and a consistent environment, we provide a unified workflow based on Docker. This guide covers all steps from environment setup and code compilation to running the experiments.
 
-### Method 1: Local Build with CMake
+### Step 1: Prepare Project Files and Environment
 
-This method uses the cross-platform build tool CMake to compile the code on your local machine.
+First, the required project files must be prepared on the host machine. Ensure **Docker** is installed and running on your system.
 
-**1. Prepare the Environment**
+1.  **Create the project directory structure.** Suppose the top-level project directory is `HL-GST`.
+2.  **Download and unzip the datasets.** The unzipped data files should be placed in the `HL-GST/HL-GST_data/` directory.
+3.  **Download and unzip the code.** The unzipped code files, including the `Dockerfile`, should be placed in the `HL-GST/HL-GST_code/` directory.
 
-First, ensure the necessary tools and libraries are installed on your system:
+The final directory structure should be as follows:
 
-  * A **C++17 compliant compiler** (e.g., g++, Clang).
-  * **CMake** (version 3.10 or higher).
-  * The **Boost C++ library**. CMake will automatically detect it if installed in a standard system path.
-
-Next, prepare the project files. Suppose your top-level project directory is `HL-GST`.
-
-  * **Download and unzip the datasets.** The unzipped data should be at `HL-GST/HL-GST_data`.
-  * **Download and unzip the codes.** The unzipped code should be at `HL-GST/HL-GST_code`.
-
-**2. Compile the Code**
-
-All executables are compiled using an out-of-source build to keep the source directory clean.
-
-```bash
-cd HL-GST/HL-GST_code
-mkdir build
-cd build
-cmake ..
-make
+```
+HL-GST/
+├── HL-GST_data/
+│   ├── musae/
+│   ├── twitch/
+│   └── ...
+└── HL-GST_code/
+    ├── Dockerfile
+    ├── CMakeLists.txt
+    ├── run.sh
+    ├── include/
+    └── src/
 ```
 
-After a successful compilation, all executables will be located in the `HL-GST/HL-GST_code/build/` directory.
+### Step 2: Build the Docker Image
 
-**3. Run the Experiments**
+This step uses the provided `Dockerfile` to build a self-contained image with all necessary dependencies (e.g., C++17 compiler, CMake, Boost library). This process only needs to be performed once.
 
-All experiments are managed by the unified `run.sh` script. This script must be executed from the `HL-GST/HL-GST_code` directory.
-
-  * **To run the experiments of generating 2-hop labels:**
+1.  **Navigate to the code directory.** Open a terminal and change the directory to `HL-GST/HL-GST_code/`, where the `Dockerfile` is located.
 
     ```bash
-    sh run.sh gen-exp
+    cd /path/to/your/HL-GST/HL-GST_code
     ```
 
-  * **To run the experiments of maintaining labels:**
+
+2.  **Build the Docker image.** Execute the following command to start the build process.
 
     ```bash
-    # First, use the following command to generate the initial labels:
-    sh run.sh nonhop-lppr
-
-    # Then, use the following command to run the experiments of maintaining labels:
-    sh run.sh nonhop-batch
+    sudo docker build -t hlgst-experiment .
     ```
 
-The experiment results will be automatically saved in CSV files.
+    The `-t hlgst-experiment` argument assigns a convenient tag to the image. The `.` specifies that the `Dockerfile` is in the current directory.
 
------
+### Step 3: Compile the Code inside the Container
 
-### Method 2: Reproducible Build with Docker (Recommended)
+Once the image is built, a container can be launched to compile the C++ source code.
 
-This method uses Docker to create a self-contained environment with all dependencies pre-installed, guaranteeing that the code runs exactly as intended.
-
-**1. Prepare the Environment**
-
-  * Ensure **Docker** is installed and running on your system.
-  * Arrange the project files as described in Method 1 (i.e., `HL-GST/HL-GST_code` and `HL-GST/HL-GST_data`).
-
-**2. Build the Docker Image**
-
-This step builds the Docker image from the provided `Dockerfile`. It only needs to be done once.
-
-```bash
-cd HL-GST/HL-GST_code
-sudo docker build -t hlgst-experiment .
-```
-
-**3. Run the Experiments in a Container**
-
-After the image is built, you can start a container to run the experiments.
-
-First, create a local directory to store the results:
-
-```bash
-cd /path/to/your/HL-GST
-mkdir results
-```
-
-Then, run the container, which will place you inside its command-line environment:
-
-```bash
-sudo docker run -it --rm \
-  -v /path/to/your/HL-GST/HL-GST_data:/app/HL-GST_data \
-  -v /path/to/your/HL-GST/results:/app/HL-GST_code/results \
-  hlgst-experiment
-```
-
-Once inside the container, you can run the experiments using the `run.sh` script.
-
-  * **To run the experiments of generating 2-hop labels:**
+1.  **Create a results directory on the host.** This directory will be used to store the output files from the experiments.
 
     ```bash
-    sh run.sh gen-exp
+    cd /path/to/your/HL-GST
+    mkdir results
     ```
 
-  * **To run the experiments of maintaining labels:**
+2.  **Launch the container.** The following command starts the container and places you inside its command-line shell.
 
     ```bash
-    sh run.sh nonhop-lppr
-    sh run.sh nonhop-batch
+    sudo docker run -it --rm \
+      -v /path/to/your/HL-GST/HL-GST_data:/app/HL-GST_data \
+      -v /path/to/your/HL-GST/results:/app/HL-GST_code/results \
+      hlgst-experiment
     ```
 
-Any result files will be saved in the `results` directory. To exit the container, simply type `exit`.
+    The `-v` flags mount host directories into the container, ensuring data persistence and access:
 
+      * The first `-v` makes the host's `HL-GST_data` directory available inside the container at `/app/HL-GST_data`.
+      * The second `-v` maps the host's `results` directory to `/app/HL-GST_code/results`, so that any generated result files are saved directly to the host.
+
+3.  **Compile the code.** Inside the container (at the `/app/HL-GST_code` prompt), the code is compiled using an out-of-source build.
+
+    ```bash
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ```
+
+    After a successful compilation, all executables will be located in the `/app/HL-GST_code/build/` directory.
+
+### Step 4: Run the Experiments
+
+After compilation, the experiments can be executed using the `run.sh` script.
+
+**Note:** The script must be executed from the `/app/HL-GST_code` directory inside the container. If you are currently in the `build` directory, return to the parent directory with `cd ..`.
+
+The following commands are supported by the `run.sh` script.
+
+#### Main Experiment Commands
+
+  * `sh run.sh gen-exp`: Runs the experiments for generating 2-hop labels, as presented in the paper. It calls the `label_generator` executable.
+
+  * `sh run.sh nonhop-lppr`: A pre-processing step for the Non-HOP maintenance experiments. It generates the initial labels and indices required for the maintenance tasks.
+
+  * `sh run.sh nonhop-batch`: Runs the full batch of Non-HOP label maintenance experiments. This command must be executed after `sh run.sh nonhop-lppr` has completed successfully.
+
+  * `sh run.sh hop-lppr`: A pre-processing step for the HOP maintenance experiments.
+
+  * `sh run.sh hop-batch`: Runs the full batch of HOP label maintenance experiments. This command must be executed after `sh run.sh hop-lppr` has completed successfully.
+
+#### Test Commands
+
+These commands execute unit tests to verify the correctness of different modules.
+
+  * `sh run.sh gen-test`: Runs tests for the label generation module.
+  * `sh run.sh nonhop-test`: Runs tests for the Non-HOP maintenance module.
+  * `sh run.sh hop-test`: Runs tests for the HOP maintenance module.
+
+All experiment results will be saved in the `results` directory on host machine. To leave the container, simply type `exit`.
 
 All the experiments in the paper are conducted via the above approaches.
-

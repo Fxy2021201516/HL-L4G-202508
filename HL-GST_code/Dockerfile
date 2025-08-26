@@ -14,9 +14,9 @@ WORKDIR /app/HL-GST_code
 
 COPY . .
 
-RUN mkdir build && \
-   cd build && \
-   cmake .. && \
-   make
+# RUN mkdir build && \
+#    cd build && \
+#    cmake .. && \
+#    make
 
 CMD ["/bin/bash"]
