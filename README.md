@@ -42,7 +42,7 @@ More detailed codes in other regions can be traced by the above codes for experi
 
 ## Compiling and Running the Code
 
-To ensure maximum reproducibility and a consistent environment, we provide a unified workflow based on Docker. This guide covers all steps from environment setup and code compilation to running the experiments.
+To ensure maximum reproducibility and a consistent environment, we provide a unified workflow based on Docker. This guide covers all steps from environment setup and code compilation to running the experiment.
 
 ### Step 1: Prepare Project Files and Environment
 
